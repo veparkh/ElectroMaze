@@ -1,5 +1,6 @@
 package com.example.electromaze
 
+import android.bluetooth.BluetoothDevice
 import androidx.lifecycle.ViewModel
 import com.example.electromaze.bluetooth.BluetoothController
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,15 +14,11 @@ class ViewModel @Inject constructor(val bController:BluetoothController): ViewMo
     private val screen = MutableStateFlow("START")
     val _screen :StateFlow<String>
         get() = screen.asStateFlow()
+    val _bPairedDevices :StateFlow<Set<BluetoothDevice>>
+        get() = bController.pairedDevices.asStateFlow()
+    val _bScannedDevices :StateFlow<Set<BluetoothDevice>>
+        get() = bController.scannedDevices.asStateFlow()
+    val _isEnabled = bController.isEnabled.asStateFlow()
 
-
-    fun navigate(){
-        if (screen.value=="START"){
-            screen.value = "STOP"
-        }
-        else{
-            screen.value="START"
-        }
-    }
 
 }
