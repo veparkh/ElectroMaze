@@ -29,7 +29,7 @@ fun ListItem(name:String,mac:String,onDeviceClick:()->Unit) {
             .clickable {
                 onDeviceClick()
             }
-            .padding(5.dp),
+            .padding(start = 8.dp, bottom = 5.dp, end = 8.dp,top = 5.dp),
         shape = RoundedCornerShape(5.dp), colors = CardDefaults.cardColors(containerColor = CardColor)
 
     ) {
