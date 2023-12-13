@@ -3,6 +3,7 @@ package com.example.electromaze.presentation
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -38,7 +39,7 @@ fun ScreenConnect(isBluetoothEnabled: Boolean, pairedDevices:Set<BluetoothDevice
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = "Bluetooth", color = textColor) },colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = CardColor),
+                title = { Text(text = "ElectroMaze", color = textColor) },colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = CardColor),
                 actions = {
                     IconButton(
                         onClick = {
@@ -58,7 +59,7 @@ fun ScreenConnect(isBluetoothEnabled: Boolean, pairedDevices:Set<BluetoothDevice
             )
         }) {
         Column(
-            Modifier.fillMaxSize(),
+            Modifier.fillMaxSize().background(CardColor),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

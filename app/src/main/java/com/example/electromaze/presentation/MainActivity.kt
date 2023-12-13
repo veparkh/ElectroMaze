@@ -40,56 +40,23 @@ class MainActivity : ComponentActivity() {
         viewModel.bController.registerBStateReceiver()
         bLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
         setContent {
-            val navController = rememberNavController()
-            val st = viewModel._screen.collectAsState(initial = "START")
-            val pairedDevices = viewModel._bPairedDevices.collectAsState(initial = emptySet())
-            val scannedDevices = viewModel._bScannedDevices.collectAsState(initial = emptySet())
-            val isEnabled = viewModel._isEnabled.collectAsState(false)
+
             ElectroMazeTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    NavHost(navController = navController, startDestination = st.value) {
-
-                        composable("START") {
-                            ScreenConnect(isEnabled.value,pairedDevices.value,scannedDevices.value,{},{
-                                viewModel.bController.registerBDeviceReceiver()
-                                viewModel.bController.startDiscovery()
-
-                            }){
-                                bLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
-                                }
-                            }
-                        }
+                    MainScreen(viewModel,bLauncher)
                     }
                 }
             }
         }
 
-
-    fun requestPermissions(){
+    private fun requestPermissions(){
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
 
-            if (!viewModel.bController.hasPermission(Manifest.permission.BLUETOOTH)) {
-                requestPermissionLauncher.launch(Manifest.permission.BLUETOOTH)
-            }
-            if (!viewModel.bController.hasPermission(Manifest.permission.BLUETOOTH_ADMIN)) {
-                requestPermissionLauncher.launch(Manifest.permission.BLUETOOTH_ADMIN)
-            }
             if (!viewModel.bController.hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
                 requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-            }
-            if (!viewModel.bController.hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)) {
-                requestPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
-            }
-            if (!viewModel.bController.hasPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION)) {
-                requestPermissionLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-            if (!viewModel.bController.hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
-                requestPermissionLauncher.launch(Manifest.permission.BLUETOOTH_SCAN)
-            }
-            if (!viewModel.bController.hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
-                requestPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
             }
         } else {
             if (!viewModel.bController.hasPermission(Manifest.permission.BLUETOOTH_SCAN)) {
@@ -98,9 +65,8 @@ class MainActivity : ComponentActivity() {
             if (!viewModel.bController.hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
                 requestPermissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
             }
-
         }
     }
 }
-}
+
 
