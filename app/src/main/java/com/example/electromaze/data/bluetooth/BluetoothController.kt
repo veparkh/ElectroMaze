@@ -1,4 +1,4 @@
-package com.example.electromaze.bluetooth
+package com.example.electromaze.data.bluetooth
 
 import android.Manifest
 import android.annotation.SuppressLint

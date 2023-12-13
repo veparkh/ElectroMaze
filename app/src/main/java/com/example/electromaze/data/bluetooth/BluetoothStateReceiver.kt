@@ -1,4 +1,4 @@
-package com.example.electromaze.bluetooth
+package com.example.electromaze.data.bluetooth
 
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
