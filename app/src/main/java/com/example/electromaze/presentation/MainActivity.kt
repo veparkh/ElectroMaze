@@ -13,12 +13,9 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import com.example.electromaze.ViewModel
+import com.example.electromaze.presentation.screens.MainScreen
 import com.example.electromaze.ui.theme.ElectroMazeTheme
 import dagger.hilt.android.AndroidEntryPoint
 

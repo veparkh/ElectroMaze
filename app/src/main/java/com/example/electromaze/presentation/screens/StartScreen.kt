@@ -1,4 +1,4 @@
-package com.example.electromaze.presentation
+package com.example.electromaze.presentation.screens
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
@@ -28,13 +28,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.electromaze.R
+import com.example.electromaze.presentation.screens.events.StartScreenEvents
 import com.example.electromaze.ui.theme.CardColor
 import com.example.electromaze.ui.theme.textColor
 
 @SuppressLint("MissingPermission")//TODO сделать проверку на разрешение BLUETOOTH_CONNECT
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScreenConnect(isBluetoothEnabled: Boolean, pairedDevices:Set<BluetoothDevice>,scannedDevices:Set<BluetoothDevice>, onDeviceClick:(BluetoothDevice)->Unit,  onClickSearchIcon:()->Unit, onClickBluetoothIcon:()->Unit) {
+fun ScreenConnect(isBluetoothEnabled: Boolean, pairedDevices:Set<BluetoothDevice>, scannedDevices:Set<BluetoothDevice>, startScreenEvent:(StartScreenEvents)->Unit, onClickBluetoothIcon:()->Unit) {
     Log.d("TAG", "screenConnect: Recomposed")
     Scaffold(
         topBar = {
@@ -76,7 +77,7 @@ fun ScreenConnect(isBluetoothEnabled: Boolean, pairedDevices:Set<BluetoothDevice
                 ) {
                 items(pairedDevices.size) { i->
                     ListItem(pairedDevices.elementAt(i).name,pairedDevices.elementAt(i).address){
-                        onDeviceClick(pairedDevices.elementAt(i))
+                        startScreenEvent(StartScreenEvents.onDeviceClick(pairedDevices.elementAt(i)))
                     }
                 }
             }
@@ -87,7 +88,7 @@ fun ScreenConnect(isBluetoothEnabled: Boolean, pairedDevices:Set<BluetoothDevice
             ) {
                 Text(text = "Добавить устройство", color = textColor)
                 IconButton(onClick = {
-                    onClickSearchIcon()
+                    startScreenEvent(StartScreenEvents.onSeacrhIconClick)
                 }) {
                     Icon(
                         painter = painterResource(id = R.drawable.baseline_manage_search_24),
@@ -107,7 +108,7 @@ fun ScreenConnect(isBluetoothEnabled: Boolean, pairedDevices:Set<BluetoothDevice
                     {scannedDevices.elementAt(i).name}
                     else{"Noname"}
                         , mac = scannedDevices.elementAt(i).address){
-                        onDeviceClick(scannedDevices.elementAt(i))
+                        startScreenEvent(StartScreenEvents.onDeviceClick(scannedDevices.elementAt(i)))
                     }
                 }
             }
