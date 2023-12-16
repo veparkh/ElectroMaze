@@ -1,6 +1,5 @@
-package com.example.electromaze.presentation
+package com.example.electromaze.presentation.screens
 
-import android.app.Instrumentation.ActivityResult
 import android.bluetooth.BluetoothAdapter
 import android.content.Intent
 import androidx.activity.result.ActivityResultLauncher
@@ -10,6 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.electromaze.ViewModel
+import com.example.electromaze.presentation.NavConstants
 
 @Composable
 fun MainScreen(viewModel: ViewModel,bLauncher:ActivityResultLauncher<Intent>) {
@@ -21,13 +21,17 @@ fun MainScreen(viewModel: ViewModel,bLauncher:ActivityResultLauncher<Intent>) {
 
     NavHost(navController = navController, startDestination = st.value) {
         composable(NavConstants.DEVICE_SCREEN) {
-            ScreenConnect(isEnabled.value,pairedDevices.value,scannedDevices.value,{},{
-                viewModel.bController.registerBDeviceReceiver()
-                viewModel.bController.startDiscovery()
-
+            ScreenConnect(isEnabled.value,pairedDevices.value,scannedDevices.value,{event->
+                viewModel.startScreenEvent(event)
             }){
                 bLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
             }
         }
+        composable(NavConstants.CONNECTING_SCREEN) {
+            ConnectScreen(){
+
+            }
+        }
     }
+
 }

@@ -5,14 +5,24 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothServerSocket
+import android.bluetooth.BluetoothSocket
 import android.content.Context
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.onCompletion
+import java.io.IOException
+import java.util.UUID
 import javax.inject.Inject
 
 class BluetoothController @Inject constructor(@ApplicationContext val context: Context) {
@@ -23,6 +33,8 @@ class BluetoothController @Inject constructor(@ApplicationContext val context: C
     val isEnabled = MutableStateFlow(bAdapter?.isEnabled?:false)
     val pairedDevices = MutableStateFlow(emptySet<BluetoothDevice>())
     val scannedDevices = MutableStateFlow(emptySet<BluetoothDevice>())
+
+    private var currentClientSocket: BluetoothSocket? = null
 
     init {
         registerBStateReceiver()
@@ -67,6 +79,46 @@ class BluetoothController @Inject constructor(@ApplicationContext val context: C
     fun unregisterBStateReceiver(){
         context.unregisterReceiver(bStateReceiver)
     }
+
+    @SuppressLint("MissingPermission")
+    fun connectToDevice(device: BluetoothDevice): Flow<String> {
+        return flow {
+
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
+                throw SecurityException("No BLUETOOTH_CONNECT permission")
+            }
+
+            currentClientSocket = bAdapter?.getRemoteDevice(device.address)?.createRfcommSocketToServiceRecord(
+                UUID.fromString(SERVICE_UUID)
+            )
+            stopDiscovery()
+            val buffer = ByteArray(1024)
+            currentClientSocket?.let { socket ->
+                try {
+                    socket.connect()
+                    Log.d("TAG", "connectToDevice: connected")
+                    while(true) {
+                        val byteCount = socket.inputStream.read(buffer)
+                        Log.d("TAG", "connectToDevice: ${buffer.decodeToString(endIndex = byteCount)}")
+                    }
+                } catch(e: IOException) {
+                    socket.close()
+                    currentClientSocket = null
+                    Log.d("TAG", "connectToDevice: IO exception}")
+                    emit("Bad")
+                }
+            }
+        }.onCompletion {
+            closeConnection()
+        }.flowOn(Dispatchers.IO)
+    }
+
+    fun closeConnection() {
+        currentClientSocket?.close()
+        currentClientSocket = null
+    }
+
+
     @SuppressLint("MissingPermission")
     fun startDiscovery(){
         if (Build.VERSION.SDK_INT>= Build.VERSION_CODES.S){
