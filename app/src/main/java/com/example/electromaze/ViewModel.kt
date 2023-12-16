@@ -1,6 +1,7 @@
 package com.example.electromaze
 
 import android.bluetooth.BluetoothDevice
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.electromaze.data.GyroController
@@ -9,10 +10,12 @@ import com.example.electromaze.presentation.NavConstants
 import com.example.electromaze.presentation.screens.events.StartScreenEvents
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 
 @HiltViewModel
@@ -44,6 +47,8 @@ class ViewModel @Inject constructor(val bController: BluetoothController, val gC
         }
     }
     private fun connectToDevice(device:BluetoothDevice){
-        deviceConnectionJob = bController.connectToDevice(device).launchIn(viewModelScope)
+
+            deviceConnectionJob = bController.connectToDevice(device).launchIn(viewModelScope)
+
     }
 }
