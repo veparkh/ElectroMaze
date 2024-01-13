@@ -5,23 +5,22 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
-import android.bluetooth.BluetoothServerSocket
 import android.bluetooth.BluetoothSocket
 import android.content.Context
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.os.Build
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.onCompletion
 import java.io.IOException
+import java.util.Calendar
+import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 
@@ -80,8 +79,9 @@ class BluetoothController @Inject constructor(@ApplicationContext val context: C
         context.unregisterReceiver(bStateReceiver)
     }
 
+    @OptIn(ExperimentalStdlibApi::class)
     @SuppressLint("MissingPermission")
-    fun connectToDevice(device: BluetoothDevice): Flow<String> {
+    fun connectToDevice(device: BluetoothDevice): Flow<ConnectionResult> {
         return flow {
 
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !hasPermission(Manifest.permission.BLUETOOTH_CONNECT)) {
@@ -92,24 +92,44 @@ class BluetoothController @Inject constructor(@ApplicationContext val context: C
                 UUID.fromString(SERVICE_UUID)
             )
             stopDiscovery()
-            val buffer = ByteArray(1024)
+            var buffer = ByteArray(1000)
+            var sumBuffer = ByteArray(0)
+            var byteCount = 0
             currentClientSocket?.let { socket ->
                 try {
                     socket.connect()
+                    emit(ConnectionResult.connecionEstablished)
                     Log.d("TAG", "connectToDevice: connected")
+                    var  i=0
+                    var currentTime: Date = Calendar.getInstance().time
                     while(true) {
-                        val byteCount = socket.inputStream.read(buffer)
-                        Log.d("TAG", "connectToDevice: ${buffer.decodeToString(endIndex = byteCount)}")
+                        do{
+                            val newBytes = socket.inputStream.read(buffer)
+                            byteCount += newBytes
+                            sumBuffer += buffer.take(newBytes)
+                            Log.d("TAG", "connectToDevice: All bytes:"+buffer.toHexString())
+                            if(byteCount==27631)
+                                break
+                        }while(newBytes>0)
+                        val options = BitmapFactory.Options()
+                        Log.d("TAG", "connectToDevice: All bytes size:"+sumBuffer.size)
+                        options.inJustDecodeBounds = true
+                        val img = BitmapFactory.decodeByteArray(sumBuffer,0,byteCount)
+                        if(img!=null){
+                            emit(ConnectionResult.newImage(img))
+                        }
+                        else{
+                            Log.d("TAG", "connectToDevice: message taken, but there is no img ")
+                        }
+                        Log.d("TAG", "connectToDevice: read byte count:$byteCount}")
                     }
                 } catch(e: IOException) {
                     socket.close()
                     currentClientSocket = null
-                    Log.d("TAG", "connectToDevice: IO exception}")
-                    emit("Bad")
+                    Log.d("TAG", "connectToDevice: IO exception")
+                    emit(ConnectionResult.connectionFailed)
                 }
             }
-        }.onCompletion {
-            closeConnection()
         }.flowOn(Dispatchers.IO)
     }
 
