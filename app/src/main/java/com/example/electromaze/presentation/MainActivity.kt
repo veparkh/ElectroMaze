@@ -22,14 +22,14 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    val viewModel: ViewModel by viewModels()
+    private val viewModel: ViewModel by viewModels()
     private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
         isGranted: Boolean ->
-            Log.d("MainActivity","permission granted:$isGranted")
+            Log.d("Permission","permission granted:$isGranted")
         }
     private val bLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {it->
-            Log.d("TAG", ":${it.resultCode}: ${it.data} ")
+            Log.d("Bluetooth", ":${it.resultCode}: ${it.data} ")
         }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

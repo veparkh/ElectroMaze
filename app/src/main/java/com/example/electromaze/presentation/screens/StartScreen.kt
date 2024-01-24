@@ -36,7 +36,7 @@ import com.example.electromaze.ui.theme.textColor
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScreenConnect(isBluetoothEnabled: Boolean, pairedDevices:Set<BluetoothDevice>, scannedDevices:Set<BluetoothDevice>, startScreenEvent:(StartScreenEvents)->Unit, onClickBluetoothIcon:()->Unit) {
-    Log.d("TAG", "screenConnect: Recomposed")
+
     Scaffold(
         topBar = {
             TopAppBar(

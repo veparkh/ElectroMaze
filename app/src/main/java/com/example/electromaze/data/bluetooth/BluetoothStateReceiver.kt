@@ -8,7 +8,7 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 
-class BluetoothStateReceiver(private val bluetoothStateChanged:(isEnabled:Boolean)->Unit): BroadcastReceiver() {
+class BluetoothStateReceiver(private val bluetoothDisconnected:()->Unit,private val bluetoothStateChanged:(isEnabled:Boolean)->Unit): BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
         if (intent?.action == BluetoothAdapter.ACTION_STATE_CHANGED) {
@@ -16,13 +16,16 @@ class BluetoothStateReceiver(private val bluetoothStateChanged:(isEnabled:Boolea
                 BluetoothAdapter.STATE_OFF -> {
                     Log.d("bluetooth", "State OFF")
                     bluetoothStateChanged(false)
-
                 }
 
                 BluetoothAdapter.STATE_ON -> {
                     Log.d("TAG", "State ON")
                     bluetoothStateChanged(true)
 
+                }
+                BluetoothAdapter.STATE_DISCONNECTED-> {
+                    Log.d("Bluetooth", "onReceive: disconnected")
+                    bluetoothDisconnected()
                 }
             }
         }

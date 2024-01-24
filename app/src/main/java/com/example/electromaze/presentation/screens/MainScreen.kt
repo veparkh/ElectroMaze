@@ -2,27 +2,24 @@ package com.example.electromaze.presentation.screens
 
 import android.bluetooth.BluetoothAdapter
 import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.activity.result.ActivityResultLauncher
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.paint
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.electromaze.ViewModel
 import com.example.electromaze.presentation.NavConstants
+import com.example.electromaze.presentation.Screens
 
 @Composable
 fun MainScreen(viewModel: ViewModel,bLauncher:ActivityResultLauncher<Intent>) {
@@ -32,8 +29,12 @@ fun MainScreen(viewModel: ViewModel,bLauncher:ActivityResultLauncher<Intent>) {
     val scannedDevices = viewModel._bScannedDevices.collectAsState(initial = emptySet())
     val isEnabled = viewModel._isEnabled.collectAsState(false)
     val image = viewModel._image.collectAsState(null)
+    val coord = viewModel._coord.collectAsState(null)
     NavHost(navController = navController, startDestination = st.value) {
         composable(NavConstants.DEVICE_SCREEN) {
+            BackHandler(true) {
+                viewModel.onBackButtonPressed(Screens.DEVICE_SCREEN)
+            }
             ScreenConnect(isEnabled.value,pairedDevices.value,scannedDevices.value,{event->
                 viewModel.startScreenEvent(event)
             }){
@@ -42,28 +43,30 @@ fun MainScreen(viewModel: ViewModel,bLauncher:ActivityResultLauncher<Intent>) {
         }
         composable(NavConstants.CONNECTING_SCREEN) {
             ConnectScreen(){
-
+                viewModel.onBackButtonPressed(Screens.CONNECTING_SCREEN)
             }
         }
-        composable(NavConstants.MODE_SCREEN){
-            image.value?.also{
-                Image(
-                    bitmap = it.asImageBitmap(),
-                    contentDescription ="table picture",
-                    //contentScale = ContentScale.Fit,
-                )
-                Canvas(Modifier.fillMaxSize(),onDraw = {
-                    //drawImage(it.asImageBitmap())
-                    drawCircle(
-                        color = Color.Green,
-                        radius = 30F,
-                        center = Offset(x = 100.dp.toPx(), y = 100.dp.toPx())
-                    )
-                })
+        composable(NavConstants.MODE_CHOICE_SCREEN){
+            ModeChoiceScreen({
+                viewModel.onBackButtonPressed(Screens.MODE_CHOICE_SCREEN)
+            }){mode->
+                viewModel.onModeChoiceEvent(mode)
             }
-
-
+        }
+        composable(NavConstants.AUTO_CONTROL_SCREEN) {
+            AutoModeScreen(image = image, coord = coord){
+                viewModel.onBackButtonPressed(Screens.AUTO_CONTROL_SCREEN)
+            }
+        }
+        composable(NavConstants.MANUAL_CONTROL_SCREEN) {
+            ManualModeScreen() {
+                viewModel.onBackButtonPressed(Screens.MANUAL_CONTROL_SCREEN)
+            }
+        }
+        composable(NavConstants.MAP_BUILDING_SCREEN) {
+            MapBuildingModeScreen() {
+                viewModel.onBackButtonPressed(Screens.MAP_BUILDING_SCREEN)
+            }
         }
     }
-
 }

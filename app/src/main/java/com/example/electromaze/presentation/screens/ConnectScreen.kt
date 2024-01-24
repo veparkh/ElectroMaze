@@ -27,7 +27,7 @@ fun ConnectScreen(backButtonPressed:(screen:String)->Unit) {
         CircularProgressIndicator()
         Text(text = "Connecting")
     }
-    BackHandler {
+    BackHandler(enabled = true) {
         backButtonPressed(NavConstants.CONNECTING_SCREEN)
     }
 }

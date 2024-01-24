@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalUnsignedTypes::class)
+
 package com.example.electromaze.data.bluetooth
 
 import android.Manifest
@@ -5,7 +7,6 @@ import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
-import android.bluetooth.BluetoothSocket
 import android.content.Context
 import android.content.IntentFilter
 import android.content.pm.PackageManager
@@ -19,21 +20,21 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import java.io.IOException
-import java.util.Calendar
-import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 
+@OptIn(ExperimentalUnsignedTypes::class)
 class BluetoothController @Inject constructor(@ApplicationContext val context: Context) {
 
     val bManager: BluetoothManager = context.getSystemService(BluetoothManager::class.java)
     val bAdapter: BluetoothAdapter? = bManager.adapter
-
+    @OptIn(ExperimentalUnsignedTypes::class)
+    val bDataExchange = DataExchange()
     val isEnabled = MutableStateFlow(bAdapter?.isEnabled?:false)
     val pairedDevices = MutableStateFlow(emptySet<BluetoothDevice>())
     val scannedDevices = MutableStateFlow(emptySet<BluetoothDevice>())
 
-    private var currentClientSocket: BluetoothSocket? = null
+
 
     init {
         registerBStateReceiver()
@@ -41,7 +42,7 @@ class BluetoothController @Inject constructor(@ApplicationContext val context: C
     }
 
     @SuppressLint("MissingPermission")
-    val bStateReceiver = BluetoothStateReceiver{ isEnable ->
+    val bStateReceiver = BluetoothStateReceiver({closeConnection()}){ isEnable ->
         isEnabled.value = isEnable
         val check = if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.S){
             hasPermission(Manifest.permission.BLUETOOTH_CONNECT)
@@ -58,7 +59,6 @@ class BluetoothController @Inject constructor(@ApplicationContext val context: C
         scannedDevices.value = scannedDevices.value+device
     }
     fun registerBDeviceReceiver(){
-        context.registerReceiver(bDeviceReceiver,IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED))
         context.registerReceiver(bDeviceReceiver,IntentFilter(BluetoothDevice.ACTION_FOUND))
         context.registerReceiver(bDeviceReceiver,IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED))
         context.registerReceiver(bDeviceReceiver,IntentFilter(BluetoothAdapter.ACTION_DISCOVERY_FINISHED))
@@ -79,7 +79,7 @@ class BluetoothController @Inject constructor(@ApplicationContext val context: C
         context.unregisterReceiver(bStateReceiver)
     }
 
-    @OptIn(ExperimentalStdlibApi::class)
+    @OptIn(ExperimentalStdlibApi::class, ExperimentalUnsignedTypes::class)
     @SuppressLint("MissingPermission")
     fun connectToDevice(device: BluetoothDevice): Flow<ConnectionResult> {
         return flow {
@@ -88,54 +88,83 @@ class BluetoothController @Inject constructor(@ApplicationContext val context: C
                 throw SecurityException("No BLUETOOTH_CONNECT permission")
             }
 
-            currentClientSocket = bAdapter?.getRemoteDevice(device.address)?.createRfcommSocketToServiceRecord(
+            bDataExchange.currentClientSocket = bAdapter?.getRemoteDevice(device.address)?.createRfcommSocketToServiceRecord(
                 UUID.fromString(SERVICE_UUID)
             )
             stopDiscovery()
-            var buffer = ByteArray(1000)
-            var sumBuffer = ByteArray(0)
-            var byteCount = 0
-            currentClientSocket?.let { socket ->
+            bDataExchange.currentClientSocket?.let { socket ->
                 try {
                     socket.connect()
                     emit(ConnectionResult.connecionEstablished)
                     Log.d("TAG", "connectToDevice: connected")
-                    var  i=0
-                    var currentTime: Date = Calendar.getInstance().time
-                    while(true) {
-                        do{
-                            val newBytes = socket.inputStream.read(buffer)
-                            byteCount += newBytes
-                            sumBuffer += buffer.take(newBytes)
-                            Log.d("TAG", "connectToDevice: All bytes:"+buffer.toHexString())
-                            if(byteCount==27631)
-                                break
-                        }while(newBytes>0)
-                        val options = BitmapFactory.Options()
-                        Log.d("TAG", "connectToDevice: All bytes size:"+sumBuffer.size)
-                        options.inJustDecodeBounds = true
-                        val img = BitmapFactory.decodeByteArray(sumBuffer,0,byteCount)
-                        if(img!=null){
-                            emit(ConnectionResult.newImage(img))
-                        }
-                        else{
-                            Log.d("TAG", "connectToDevice: message taken, but there is no img ")
-                        }
-                        Log.d("TAG", "connectToDevice: read byte count:$byteCount}")
-                    }
                 } catch(e: IOException) {
                     socket.close()
-                    currentClientSocket = null
+                    bDataExchange.currentClientSocket = null
                     Log.d("TAG", "connectToDevice: IO exception")
                     emit(ConnectionResult.connectionFailed)
                 }
             }
         }.flowOn(Dispatchers.IO)
     }
+    @OptIn(ExperimentalStdlibApi::class, ExperimentalUnsignedTypes::class)
+    @SuppressLint("MissingPermission")
+    fun autoControlMode():Flow<AutoModeResult>{
+        return flow{  stopDiscovery()
+            var buffer: ByteArray
+            var length: Int
+            bDataExchange.currentClientSocket?.let { socket ->
+                try {
+                    bDataExchange.sendAndReceive(bDataExchange.autoControlCommand)
+                    val img = bDataExchange.receiveImage()
+                    if(img!=null){
+                        emit(AutoModeResult.newImage(img))
+                    }
+                    else{
+                        throw IOException("wrong img")
+                    }
+                    while (true){
+                        buffer = ByteArray(40)
+                        length = socket.inputStream.read(buffer,0,14)
+                        val coordArr = buffer.take(length).toByteArray()
+                        if (bDataExchange.isCorrectCRC(coordArr)){
+                            val point = bDataExchange.byteArrayToCoordinates(coordArr.take(10).takeLast(8).toByteArray())
+                            emit(AutoModeResult.NewCoordinates(point))
+                        }
+                    }
+
+                } catch(e: IOException) {
+                    if(socket.isConnected){
+                        socket.close()
+                    }
+                    bDataExchange.currentClientSocket = null
+                    Log.d("autoControlMode", "connectToDevice: $e")
+                    emit(AutoModeResult.connectionFailed)
+                }
+            }
+        }.flowOn(Dispatchers.IO)
+    }
+
+    fun chooseMode():Flow<ChooseModeResult>{
+        return flow{
+            stopDiscovery()
+            Log.d("currentClientSocket", "chooseMode: socket ${bDataExchange.currentClientSocket!=null} ")
+            bDataExchange.currentClientSocket?.let { socket ->
+                try {
+                    bDataExchange.sendAndReceive(bDataExchange.chooseModeCommand)
+                    emit(ChooseModeResult.connecionEstablished)
+                } catch(e: IOException) {
+                    if(socket.isConnected){
+                        Log.d("TAG", "connectToDevice: $e")
+                        emit(ChooseModeResult.connectionFailed)
+                    }
+                }
+            }
+        }.flowOn(Dispatchers.IO)
+    }
 
     fun closeConnection() {
-        currentClientSocket?.close()
-        currentClientSocket = null
+        bDataExchange.currentClientSocket?.close()
+        bDataExchange.currentClientSocket = null
     }
 
 
