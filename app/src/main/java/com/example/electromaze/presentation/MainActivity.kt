@@ -67,7 +67,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
-        viewModel.gController.onStopListening()
+       // viewModel.gController.onStopListening()
     }
 }
 

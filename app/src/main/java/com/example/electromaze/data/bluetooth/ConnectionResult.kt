@@ -18,7 +18,7 @@ sealed interface ManualModeResult {
 
     object connectionFailed:ManualModeResult
     data class newImage(val img:Bitmap):ManualModeResult
-    data class NewCoordinates(val point:Point):ManualModeResult
+    data class NewAngles(val point:Point):ManualModeResult
 }
 sealed interface MapBuildingResult {
     object connecionEstablished:MapBuildingResult

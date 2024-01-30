@@ -2,14 +2,17 @@ package com.example.electromaze.data
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.util.Log
-import androidx.compose.runtime.mutableStateOf
+import com.example.electromaze.data.bluetooth.Angles
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import kotlin.math.PI
 
@@ -17,11 +20,15 @@ import kotlin.math.PI
 class GyroController @Inject constructor(@ApplicationContext  var context : Context):
     SensorEventListener {
     private lateinit var sensorManager:SensorManager
+
     private var gSensor:Sensor? = null
     private var rotationMatrix = FloatArray(9)
-    private var _angles =  FloatArray(3)
+    private var _localAngles =  FloatArray(3)
     val isSensorExist = context.packageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_GYROSCOPE)
-    val angles = MutableStateFlow(arrayOf(0.0f,0.0f,0.0f))
+
+    val angles = MutableStateFlow<Angles?>(null)
+    val _angles : StateFlow<Angles?>
+        get() = angles.asStateFlow()
     init {
         if(isSensorExist){
             sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -48,12 +55,12 @@ class GyroController @Inject constructor(@ApplicationContext  var context : Cont
             return
         if(event?.sensor?.type == Sensor.TYPE_ROTATION_VECTOR){
              SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
-             SensorManager.getOrientation(rotationMatrix, _angles)
-            _angles.forEachIndexed{i,el->
-                _angles[i] = (el*180/ PI).toFloat()
+             SensorManager.getOrientation(rotationMatrix, _localAngles)
+            _localAngles.forEachIndexed{ i, el->
+                _localAngles[i] = (el*180/ PI).toFloat()
             }
-            angles.value = _angles.clone().toTypedArray()
-            Log.d("Gyro", angles.value.contentToString())
+            angles.value = Angles(_localAngles[0],_localAngles[1])
+            Log.d("Gyro", angles.value.toString())
         }
     }
 

@@ -1,6 +1,5 @@
 package com.example.electromaze.presentation.screens
 
-import android.content.res.Resources.Theme
 import android.graphics.Bitmap
 import android.graphics.Point
 import androidx.activity.compose.BackHandler
@@ -12,9 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
@@ -27,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.electromaze.data.bluetooth.Angles
 import com.example.electromaze.ui.theme.CardColor
 import com.example.electromaze.ui.theme.ElectroMazeTheme
 
@@ -91,9 +89,13 @@ fun AutoModeScreen(image: State<Bitmap?>, coord:State<Point?>, backButtonPressed
 }
 
 @Composable
-fun ManualModeScreen(backButtonPressed: () -> Unit = {}) {
+fun ManualModeScreen(angles: State<Angles?>, backButtonPressed: () -> Unit = {}) {
     BackHandler(enabled = true) {
         backButtonPressed()
+    }
+    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("Здесь пока ничего нет, но что-то обязательно появится")
+        Text(text = "${angles.value?.pitch}   ${angles.value?.roll}")
     }
 }
 

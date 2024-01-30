@@ -6,12 +6,12 @@ import android.graphics.BitmapFactory
 import android.graphics.Point
 import android.util.Log
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.util.zip.CRC32
 
+data class Angles(val roll:Float,val pitch:Float)
 @OptIn(ExperimentalStdlibApi::class)
 @ExperimentalUnsignedTypes
 class DataExchange() {
@@ -21,6 +21,7 @@ class DataExchange() {
     val manualControlCommand = addCRC( ubyteArrayOf(255u,2u).toByteArray())
     val mapBuildingCommand = addCRC(ubyteArrayOf(255u,3u).toByteArray())
     val chooseModeCommand = addCRC(ubyteArrayOf(255u,4u).toByteArray())
+    val anglesCommand = byteArrayOf(100,1)
     fun countCRC(array: ByteArray): UInt {
         val CRC = CRC32()
         CRC.reset()
@@ -45,12 +46,11 @@ class DataExchange() {
     }
 
 
-    fun anglesToByteArrayWithCRC(fArr: FloatArray): ByteArray {
-        val bArr = ByteArray(fArr.size * 4)
-        for (i in fArr.indices) {
-            ByteBuffer.wrap(bArr, i * 4, 4).putFloat(fArr[i])
-        }
-        return addCRC(bArr)
+    fun anglesToByteArrayWithCRC(angles:Angles): ByteArray {
+        val bArr = ByteArray(2 * 4)
+        ByteBuffer.wrap(bArr, 0, 4).putFloat(angles.roll)
+        ByteBuffer.wrap(bArr, 4, 4).putFloat(angles.pitch)
+        return addCRC(anglesCommand+bArr)
     }
 
     fun byteArrayToCoordinates(bArr: ByteArray): Point {

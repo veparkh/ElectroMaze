@@ -11,18 +11,19 @@ import com.example.electromaze.data.bluetooth.AutoModeResult
 import com.example.electromaze.data.bluetooth.BluetoothController
 import com.example.electromaze.data.bluetooth.ChooseModeResult
 import com.example.electromaze.data.bluetooth.ConnectionResult
+import com.example.electromaze.data.bluetooth.ManualModeResult
 import com.example.electromaze.presentation.NavConstants
 import com.example.electromaze.presentation.Screens
 import com.example.electromaze.presentation.screens.Modes
 import com.example.electromaze.presentation.screens.events.StartScreenEvents
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -93,11 +94,19 @@ class ViewModel @Inject constructor(val bController: BluetoothController, val gC
                     deviceConnectionJob?.cancelAndJoin()
                     Log.d("Bluetooth", "onBackButtonPressed: Job finished")
                     deviceConnectionJob = bController.chooseMode().onEach {result->
-
+                        when(result){
+                            ChooseModeResult.connecionEstablished -> {
+                                this@ViewModel.screen.value = NavConstants.MODE_CHOICE_SCREEN
+                            }
+                            ChooseModeResult.connectionFailed -> {
+                                closeConnection()
+                                bController.updatePairedDevices()
+                                this@ViewModel.screen.value = NavConstants.DEVICE_SCREEN
+                            }
+                        }
                     }.launchIn(viewModelScope)
+
                 }
-
-
             }
             Screens.MAP_BUILDING_SCREEN -> {
                 deviceConnectionJob?.cancel()
@@ -138,7 +147,8 @@ class ViewModel @Inject constructor(val bController: BluetoothController, val gC
                                 coord.value = result.point
                             }
                             AutoModeResult.connectionFailed -> {
-
+                                closeConnection()
+                                screen.value = NavConstants.DEVICE_SCREEN
                             }
                             is AutoModeResult.newImage -> {
                                 image.value = result.img
@@ -149,6 +159,19 @@ class ViewModel @Inject constructor(val bController: BluetoothController, val gC
                 }
             }
             Modes.ManualControl -> {
+                gController.onStartListening()
+                screen.value = NavConstants.MANUAL_CONTROL_SCREEN
+                deviceConnectionJob = bController.manualControlMode(gController._angles).onEach { result->
+                    when(result){
+                        is ManualModeResult.NewAngles -> TODO()
+                        ManualModeResult.connectionFailed -> {
+                        gController.onStopListening()
+                            closeConnection()
+                            screen.value = NavConstants.DEVICE_SCREEN
+                        }
+                        is ManualModeResult.newImage -> TODO()
+                    }
+                }.onCompletion { gController.onStopListening() }.launchIn(viewModelScope)
 
             }
             Modes.MapBuilding -> {

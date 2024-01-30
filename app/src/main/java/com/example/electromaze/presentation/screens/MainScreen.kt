@@ -4,16 +4,8 @@ import android.bluetooth.BluetoothAdapter
 import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.activity.result.ActivityResultLauncher
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -30,6 +22,7 @@ fun MainScreen(viewModel: ViewModel,bLauncher:ActivityResultLauncher<Intent>) {
     val isEnabled = viewModel._isEnabled.collectAsState(false)
     val image = viewModel._image.collectAsState(null)
     val coord = viewModel._coord.collectAsState(null)
+    val angles = viewModel.gController._angles.collectAsState(null)
     NavHost(navController = navController, startDestination = st.value) {
         composable(NavConstants.DEVICE_SCREEN) {
             BackHandler(true) {
@@ -38,6 +31,7 @@ fun MainScreen(viewModel: ViewModel,bLauncher:ActivityResultLauncher<Intent>) {
             ScreenConnect(isEnabled.value,pairedDevices.value,scannedDevices.value,{event->
                 viewModel.startScreenEvent(event)
             }){
+                viewModel.bController.updatePairedDevices()
                 bLauncher.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))
             }
         }
@@ -59,7 +53,7 @@ fun MainScreen(viewModel: ViewModel,bLauncher:ActivityResultLauncher<Intent>) {
             }
         }
         composable(NavConstants.MANUAL_CONTROL_SCREEN) {
-            ManualModeScreen() {
+            ManualModeScreen(angles) {
                 viewModel.onBackButtonPressed(Screens.MANUAL_CONTROL_SCREEN)
             }
         }

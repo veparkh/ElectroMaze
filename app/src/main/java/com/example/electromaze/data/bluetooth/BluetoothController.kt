@@ -10,15 +10,18 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.graphics.BitmapFactory
 import android.os.Build
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withTimeout
 import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
@@ -33,7 +36,6 @@ class BluetoothController @Inject constructor(@ApplicationContext val context: C
     val isEnabled = MutableStateFlow(bAdapter?.isEnabled?:false)
     val pairedDevices = MutableStateFlow(emptySet<BluetoothDevice>())
     val scannedDevices = MutableStateFlow(emptySet<BluetoothDevice>())
-
 
 
     init {
@@ -106,6 +108,34 @@ class BluetoothController @Inject constructor(@ApplicationContext val context: C
             }
         }.flowOn(Dispatchers.IO)
     }
+    fun manualControlMode(angles: StateFlow<Angles?>):Flow<ManualModeResult>{
+        return flow<ManualModeResult.connectionFailed>{
+            stopDiscovery()
+            bDataExchange.currentClientSocket?.let { socket ->
+                    bDataExchange.sendAndReceive(bDataExchange.manualControlCommand)
+                    while (true){
+                        angles.collect{
+                            it?.let {angles->
+                                val anglesBArray = bDataExchange.anglesToByteArrayWithCRC(angles)
+                                socket.outputStream.write(anglesBArray)
+                            }
+                        }
+                    }
+            }
+        }.catch{e->
+            if(e == CancellationException())
+                return@catch
+            bDataExchange.currentClientSocket?.let { socket->
+                if(socket.isConnected){
+                    socket.close()
+                }
+            }
+            emit(ManualModeResult.connectionFailed)
+            bDataExchange.currentClientSocket = null
+            Log.d("autoControlMode", "connectToDevice: $e")
+
+        }.flowOn(Dispatchers.IO)
+    }
     @OptIn(ExperimentalStdlibApi::class, ExperimentalUnsignedTypes::class)
     @SuppressLint("MissingPermission")
     fun autoControlMode():Flow<AutoModeResult>{
@@ -113,7 +143,6 @@ class BluetoothController @Inject constructor(@ApplicationContext val context: C
             var buffer: ByteArray
             var length: Int
             bDataExchange.currentClientSocket?.let { socket ->
-                try {
                     bDataExchange.sendAndReceive(bDataExchange.autoControlCommand)
                     val img = bDataExchange.receiveImage()
                     if(img!=null){
@@ -124,23 +153,27 @@ class BluetoothController @Inject constructor(@ApplicationContext val context: C
                     }
                     while (true){
                         buffer = ByteArray(40)
-                        length = socket.inputStream.read(buffer,0,14)
-                        val coordArr = buffer.take(length).toByteArray()
-                        if (bDataExchange.isCorrectCRC(coordArr)){
-                            val point = bDataExchange.byteArrayToCoordinates(coordArr.take(10).takeLast(8).toByteArray())
-                            emit(AutoModeResult.NewCoordinates(point))
+                        withTimeout(300) {
+                            length = socket.inputStream.read(buffer, 0, 14)
                         }
+                            val coordArr = buffer.take(length).toByteArray()
+                            if (bDataExchange.isCorrectCRC(coordArr)){
+                                val point = bDataExchange.byteArrayToCoordinates(coordArr.take(10).takeLast(8).toByteArray())
+                                emit(AutoModeResult.NewCoordinates(point))
+                            }
                     }
-
-                } catch(e: IOException) {
-                    if(socket.isConnected){
-                        socket.close()
-                    }
-                    bDataExchange.currentClientSocket = null
-                    Log.d("autoControlMode", "connectToDevice: $e")
-                    emit(AutoModeResult.connectionFailed)
+                }
+        }.catch {e->
+            if(e == CancellationException())
+                return@catch
+            bDataExchange.currentClientSocket?.let {socket->
+                if (socket.isConnected){
+                    socket.close()
                 }
             }
+            bDataExchange.currentClientSocket = null
+            Log.d("autoControlMode", "connectToDevice: $e")
+            emit(AutoModeResult.connectionFailed)
         }.flowOn(Dispatchers.IO)
     }
 
