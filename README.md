@@ -5,3 +5,5 @@ Android bluetooth client app for thesis
 Для работы с данными использована viewmodel, хранящая состояния, передаваемые UI.
 Для упрощения создания классов использован hilt.
 
+
+!(Управление с телефона)[https://github.com/veparkh/ElectroMaze/blob/assets/maze.mp4]
