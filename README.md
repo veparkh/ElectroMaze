@@ -26,7 +26,6 @@ An Android app that acts as the user-facing remote and display for the maze-solv
   - **Auto** — the host computes the path; the phone just displays progress with the planned trajectory overlaid.
   - **Map building** — scaffold for capturing a new maze layout.
 
-The phone never talks to the STM32 directly — it's a companion UI for the PC, not a bridge.
 
 ## Demo
 
