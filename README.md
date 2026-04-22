@@ -1,7 +1,6 @@
 <h1 align="center">ElectroMaze</h1>
 <p align="center">
   <b>Android Bluetooth client for the maze-solving system</b><br>
-  <sub>Companion app for <a href="https://github.com/veparkh/thesisRaspberry">thesisRaspberry</a> — my BSc thesis project</sub>
 </p>
 
 <p align="center">
@@ -21,16 +20,15 @@ An Android app that acts as the user-facing remote and display for the maze-solv
 
 - Connects to the host PC over **Bluetooth RFCOMM**.
 - Receives and displays the live overhead camera view.
-- Lets the user choose between **three modes**:
+- Lets the user choose between **two modes**:
   - **Manual** — reads the phone's orientation sensor and streams roll / pitch angles back to the host, which forwards them to the tilt-stage firmware ([ElectroMazeSTM](https://github.com/veparkh/ElectroMazeSTM)) over UART.
   - **Auto** — the host computes the path; the phone just displays progress with the planned trajectory overlaid.
-  - **Map building** — scaffold for capturing a new maze layout.
 
 
 ## Demo
 
 ### Manual control
-The phone's orientation drives the tilt stage in real time — roll/pitch angles from the accelerometer are sent over Bluetooth and translated into mechanical tilt.
+The phone's orientation drives the tilt stage in real time — roll/pitch angles from the device's orientation sensor are sent over Bluetooth and translated into mechanical tilt.
 
 https://github.com/user-attachments/assets/1e232227-23a1-45f9-9fb5-989013c440c5
 
@@ -42,12 +40,12 @@ https://github.com/user-attachments/assets/1e232227-23a1-45f9-9fb5-989013c440c5
 - **Architecture:** MVVM
 - **Concurrency:** Kotlin Coroutines + Flow
 - **I/O:** Bluetooth RFCOMM
-- **Sensors:** Android accelerometer (for manual mode)
+- **Sensors:** Android orientation sensor (for manual mode)
 
 ## Screens
 
 - Device discovery and pairing
-- Mode choice (manual / auto / map-building)
+- Mode choice (manual / auto)
 - Live camera stream with overlaid planned path
 - Manual tilt control driven by device orientation
 
