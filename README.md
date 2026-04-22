@@ -9,6 +9,10 @@
   <img alt="Android" src="https://img.shields.io/badge/Android-34A853?style=flat&logo=android&logoColor=white">
   <img alt="Bluetooth" src="https://img.shields.io/badge/Bluetooth%20RFCOMM-0082FC?style=flat&logo=bluetooth&logoColor=white">
 </p>
+<p align="center">
+  <img width="600" alt="Physical tilt-stage rig" src="https://github.com/user-attachments/assets/72a2bfaa-150c-439d-add1-8218a801faf1">
+</p>
+
 
 ---
 
